@@ -75,23 +75,21 @@ function handleNewFile(filename) {
 }
 
 async function applyBorder(inputPath, outputPath) {
+  const orientation = "portrait"; // set to either "portrait" or "landscape" based on your needs
+
+  const borderFile = orientation === "portrait" ? "border-portrait.png" : "border.png";
+
   const resized = await sharp(inputPath)
-    .resize(FRAME.width, FRAME.height, {
-      fit: "fill"
-    })
+    .resize(FRAME.width, FRAME.height, { fit: "fill" })
     .toBuffer();
 
-  await sharp("border.png")
+  await sharp(borderFile)
     .composite([
-      {
-        input: resized,
-        left: FRAME.x,
-        top: FRAME.y
-      }
+      { input: resized, left: FRAME.x, top: FRAME.y }
     ])
     .toFile(outputPath);
 
-    console.log("✅ Photo processed →", outputPath);
+  console.log(`✅ Photo processed (${orientation}) →`, outputPath);
 }
 
 startListener();
