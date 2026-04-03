@@ -1,4 +1,6 @@
 const sharp = require("sharp");
+const { exiftool } = require("exiftool-vendored");
+
 const FRAME = {
   x: 1275,
   y: 850,
@@ -74,13 +76,29 @@ function handleNewFile(filename) {
   }, 500);
 }
 
-async function applyBorder(inputPath, outputPath) {
-  const orientation = "portrait"; // set to either "portrait" or "landscape" based on your needs
+async function detectOrientation(filePath) {
+  const metadata = await exiftool.read(filePath);
+  const orientation = metadata.Orientation;
 
-  const borderFile = orientation === "portrait" ? "border-portrait.png" : "border.png";
+  console.log(`Orientation: ${orientation}`);
+
+  return orientation;
+}
+
+async function applyBorder(inputPath, outputPath) {
+  const orientation = await detectOrientation(inputPath);
+  const portraitOrientation = [6, 8];
+
+  const borderFile = portraitOrientation.includes(orientation) ? "border-portrait.png" : "border.png";
+  let rotationAngle = 0;
+  
+  if (orientation === 8) { 
+    rotationAngle = 180;
+  }
 
   const resized = await sharp(inputPath)
     .resize(FRAME.width, FRAME.height, { fit: "fill" })
+    .rotate(rotationAngle)
     .toBuffer();
 
   await sharp(borderFile)
