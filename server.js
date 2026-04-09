@@ -118,7 +118,7 @@ async function startUp() {
   console.clear();
 
   console.log(coreCompleteText + cameraCompleteText + tempCompleteText + printCompleteText);
-  console.log("\n\n\n");
+  console.log("\n");
 }
 
 function startListener() {
@@ -139,10 +139,10 @@ function startListener() {
     });
 
     gp.stderr.on("data", data => {
-      console.error("⚠️ gphoto2 error:", data.toString());
+      console.error("          ", styleText(['black', 'bold', 'bgYellow'], ' camera '), "    ", "ERROR FINDING CAMERA", "\n");
     });
     gp.on("close", code => {
-      console.log(`❌ gphoto2 exited (${code}). Restarting...`);
+      console.log("          ", styleText(['black', 'bold', 'bgRed'], ' camera '), "    ", "FORCE EXIT ", code, " RESTARTING");
       setTimeout(startListener, 1000);
     });
   });
