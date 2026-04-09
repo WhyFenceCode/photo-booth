@@ -4,17 +4,17 @@ const { exec } = require("child_process");
 const readline = require("readline");
 
 const HorizontalFRAME = {
-  x: 1275,
-  y: 850,
-  width: 6450,
-  height: 4300
+  x: 0,
+  y: 0,
+  width: 7395,
+  height: 4930
 };
 
 const VerticalFRAME = {
-  x: 1275,
-  y: 850,
-  width: 4300,
-  height: 6450
+  x: 0,
+  y: 1070,
+  width: 7395,
+  height: 4930
 };
 
 print = false;
