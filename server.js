@@ -1,12 +1,23 @@
 const sharp = require("sharp");
 const { exiftool } = require("exiftool-vendored");
+const { exec } = require("child_process");
+const readline = require("readline");
 
-const FRAME = {
+const HorizontalFRAME = {
   x: 1275,
   y: 850,
   width: 6450,
   height: 4300
 };
+
+const VerticalFRAME = {
+  x: 1275,
+  y: 850,
+  width: 4300,
+  height: 6450
+};
+
+print = false;
 
 const { spawn } = require("child_process");
 const fs = require("fs");
@@ -32,13 +43,27 @@ function getNextFilename() {
   return `${padded}.jpg`;
 }
 
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+function askCopies() {
+  return new Promise(resolve => {
+    rl.question("🖨️  Number of copies? (default 1): ", answer => {
+      const parsed = parseInt(answer.trim(), 10);
+      resolve(isNaN(parsed) || parsed <= 0 ? 1 : parsed);
+    });
+  });
+}
+
 function startListener() {
   const gp = spawn("gphoto2", ["--wait-event-and-download"]);
-  console.log("📡 Listening for new photos...");
+  console.log("📡 Listening for photo...");
 
   gp.stdout.on("data", data => {
     const text = data.toString();
-    process.stdout.write(text);
+    //process.stdout.write(text);
 
     const match = text.match(/Saving file as (.+\.(jpg|jpeg|JPG|JPEG))/);
     if (match) {
@@ -49,7 +74,7 @@ function startListener() {
 
   gp.stderr.on("data", data => console.error("⚠️ gphoto2 error:", data.toString()));
   gp.on("close", code => {
-    console.log(`gphoto2 exited (${code}). Restarting...`);
+    console.log(`❌ gphoto2 exited (${code}). Restarting...`);
     setTimeout(startListener, 1000);
   });
 }
@@ -72,7 +97,7 @@ function handleNewFile(filename) {
       console.error("❌ Move failed:", err);
       return;
     }
-    console.log("✅ Photo temp saved →", destPath);
+    //console.log("✅ Photo temp saved →", destPath);
     applyBorder(destPath, processedPath);
   });
 }
@@ -81,21 +106,40 @@ async function detectOrientation(filePath) {
   const metadata = await exiftool.read(filePath);
   const orientation = metadata.Orientation;
 
-  console.log(`Orientation: ${orientation}`);
-
   return orientation;
+}
+
+function printPhoto(filePath, copies) {
+  const printerName = "ojet";
+
+  exec(
+    `lp -d ${printerName} \
+     -n ${copies} \
+     -o fit-to-page \
+     -o print-quality=5 \
+     "${filePath}"`,
+    (err) => {
+      if (err) {
+        console.error("❌ Print failed:", err);
+        return;
+      }
+      console.log("🖨️ Printed:", filePath);
+    }
+  );
 }
 
 async function applyBorder(inputPath, outputPath) {
   const orientation = await detectOrientation(inputPath);
   const portraitOrientation = [6, 8];
 
-  const borderFile = portraitOrientation.includes(orientation) ? "border-portrait.png" : "border.png";
+  const borderFile = portraitOrientation.includes(orientation) ? "Vertical.png" : "Horizontal.png";
   let rotationAngle = 0;
   
   if (orientation === 8) { 
     rotationAngle = 180;
   }
+
+  const FRAME = portraitOrientation.includes(orientation) ? VerticalFRAME : HorizontalFRAME;
 
   const resized = await sharp(inputPath)
     .resize(FRAME.width, FRAME.height, { fit: "fill" })
@@ -108,7 +152,12 @@ async function applyBorder(inputPath, outputPath) {
     ])
     .toFile(outputPath);
 
-  console.log(`✅ Photo processed (${orientation}) →`, outputPath);
+  console.log(`✅ Photo processed →`, outputPath);
+
+  const copies = await askCopies();
+  if (print) await printPhoto(outputPath, copies);
+  console.log(" ");
+  console.log("📡 Listening for photo...");
 }
 
 startListener();
