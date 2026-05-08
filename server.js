@@ -223,8 +223,10 @@ async function applyBorder(inputPath, outputPath) {
 
   console.log(`✅ Photo processed →`, outputPath);
 
-  const copies = await askCopies();
-  if (print) await printPhoto(outputPath, copies);
+  if (print) {
+    const copies = await askCopies();
+    await printPhoto(outputPath, copies);
+  };
   console.clear()
   console.log("📡 Listening for photo...");
 }
